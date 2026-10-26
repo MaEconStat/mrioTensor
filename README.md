@@ -12,6 +12,7 @@
 In global economic and environmental accounting (EEIOA), multi-regional input-output data are conventionally stored and manipulated as flattened 2D block matrices $Z \in \mathbb{R}^{N \times N}$, where each index $i = (r - 1)S + s$ conflates geographic location (region $r$) with production technology (sector $s$).
 
 While standard 2D operations suffice for basic matrix inversion, flattening obscures the multi-way structural properties of global value chains. In particular:
+
 1. **Structural semantics**: Geographic trade linkages (region $\to$ region) and industrial input-output linkages (sector $\to$ sector) are entangled in a single composite index.
 2. **Multilinear operations**: Marginalizing, contracting, or low-rank approximating intermediate flows across specific dimensions (e.g., aggregating out sectors to obtain pure inter-regional trade, or aggregating out regions to evaluate global technology matrices) requires clumsy matrix slicing.
 3. **Higher-order representations**: Generalizing to multiple environmental extensions or multi-year panels naturally yields higher-order arrays (5-th or 6-th order tensors) that benefit from multilinear algebra (such as Higher-Order SVD and Tucker decomposition).
@@ -22,17 +23,17 @@ While standard 2D operations suffice for basic matrix inversion, flattening obsc
 
 ## Core Capabilities
 
-| Function | Description | Mathematical Operation |
+| Function | Description | Mathematical Formulation |
 | :--- | :--- | :--- |
-| `as_mrio_tensor()` | Reshape 2D composite matrix to 4D tensor | $\mathcal{T}_{r, s, r', s'} \leftarrow Z_{(r-1)S+s, (r'-1)S+s'}$ |
-| `as_mrio_matrix()` | Flatten 4D tensor back to 2D composite matrix | $Z_{(r-1)S+s, (r'-1)S+s'} \leftarrow \mathcal{T}_{r, s, r', s'}$ |
-| `aggregate_mrio()` | Marginalize over regional or sectoral dimensions | Inter-regional $\sum_{s, s'} \mathcal{T}$ or Inter-sectoral $\sum_{r, r'} \mathcal{T}$ |
+| `as_mrio_tensor()` | Reshape 2D composite matrix to 4D tensor | $\mathcal{T} \leftarrow Z$ via $i = (r-1)S + s$ |
+| `as_mrio_matrix()` | Flatten 4D tensor back to 2D composite matrix | $Z \leftarrow \mathcal{T}$ via $i = (r-1)S + s$ |
+| `aggregate_mrio()` | Marginalize over regional or sectoral dimensions | $\sum_{s, s'} \mathcal{T}$ (regions) or $\sum_{r, r'} \mathcal{T}$ (sectors) |
 | `mode_product()` | Mode-$n$ matrix-tensor contraction | $\mathcal{Y} = \mathcal{X} \times_n M$ |
 | `leontief_output()` | Solve gross output balance without explicit matrix inversion | $(I - A) x = y$ |
-| `embodied_transfer()` | Pairwise embodied environmental intensity attribution | $F_{ij} = f_i L_{ij} y_j$, where $L = (I - A)^{-1}$ |
-| `path_order_contributions()` | Evaluate Neumann series tier contributions | $c_k = f^\top A^k y$ for tier $k = 0, 1, \dots$ |
+| `embodied_transfer()` | Pairwise embodied environmental intensity attribution | $F = \hat{f} (I - A)^{-1} \hat{y}$ |
+| `path_order_contributions()` | Evaluate Neumann series tier contributions | $c_k = f^\top A^k y \quad (k = 0, 1, \dots)$ |
 | `mrio_hosvd()` | Truncated Higher-Order SVD (Tucker representation) | $\mathcal{T} \approx \mathcal{G} \times_1 U_1 \times_2 U_2 \times_3 U_3 \times_4 U_4$ |
-| `example_mrio()` | Synthetic 2-region, 2-sector benchmark data | Verification and testing fixture |
+| `example_mrio()` | Synthetic 2-region, 2-sector benchmark data | Verification fixture |
 
 ---
 
@@ -102,24 +103,56 @@ cat("Relative approximation error:", round(hosvd_fit$relative_error, 4), "\n")
 ## Mathematical Formulation
 
 ### 1. Tensor Indexing Layout
+
 Let $R$ denote the number of regions and $S$ the number of sectors per region, yielding $N = RS$ composite nodes. Under the canonical **region-major, sector-minor** ordering:
-$$i = (r - 1)S + s, \quad j = (r' - 1)S + s'$$
+
+$$
+i = (r - 1)S + s, \quad j = (r' - 1)S + s'
+$$
+
 The 4-mode tensor $\mathcal{T} \in \mathbb{R}^{R \times S \times R \times S}$ maps bijectively to the flattened matrix $Z \in \mathbb{R}^{N \times N}$ via:
-$$\mathcal{T}_{r, s, r', s'} = Z_{(r-1)S+s, \, (r'-1)S+s'}$$
+
+$$
+\mathcal{T}_{r, s, r', s'} = Z_{(r-1)S+s, \, (r'-1)S+s'}
+$$
 
 ### 2. Leontief Balance and Output Solves
+
 Given technical coefficient matrix $A = Z \hat{x}^{-1}$ and final demand vector $y$, the standard Leontief balance:
-$$x = A x + y \implies (I - A)x = y$$
+
+$$
+x = A x + y \iff (I - A)x = y
+$$
+
 is solved directly via LU factorization (`solve(I - A, y)`), avoiding dense matrix inversion.
 
 When the spectral radius $\rho(A) < 1$, $(I - A)^{-1}$ admits the convergent Neumann series:
-$$L = (I - A)^{-1} = \sum_{k=0}^{\infty} A^k$$
+
+$$
+L = (I - A)^{-1} = \sum_{k=0}^{\infty} A^k
+$$
+
 Tier contributions $c_k = f^\top A^k y$ are evaluated via sequential matrix-vector contractions $v_{k} = A v_{k-1}$ ($v_0 = y$), maintaining $O(k N^2)$ complexity rather than $O(k N^3)$.
 
 ### 3. Embodied Intensity Allocation
+
 For direct environmental intensity vector $f \in \mathbb{R}^N$ (e.g., carbon emissions per unit of gross output), the pairwise attribution matrix $F \in \mathbb{R}^{N \times N}$ is:
-$$F = \hat{f} (I - A)^{-1} \hat{y}$$
-where $\hat{\cdot}$ denotes diagonalized vectors. Row sums give sector-level production emissions, column sums give footprint attributed to final consumption, and $\mathbf{1}^\top F \mathbf{1} = f^\top x$.
+
+$$
+F = \hat{f} (I - A)^{-1} \hat{y}
+$$
+
+where $\hat{\cdot}$ denotes diagonalized vectors. In component form:
+
+$$
+F_{ij} = f_i L_{ij} y_j
+$$
+
+Row sums $\sum_j F_{ij}$ allocate footprint to producing sectors, column sums $\sum_i F_{ij}$ attribute footprint to final consumption categories, and the total system footprint satisfies:
+
+$$
+\sum_{i=1}^N \sum_{j=1}^N F_{ij} = f^\top x
+$$
 
 ---
 
