@@ -1,0 +1,20 @@
+Package: mrioTensor
+Type: Package
+Title: Tensor-Aware Multi-Regional Input-Output Analysis
+Version: 0.1.0
+Authors@R: person(given = "Zhen", family = "Ma",
+    email = "mzhen5082@gmail.com",
+    role = c("aut", "cre"))
+Description: Lightweight tools for reshaping multi-regional input-output
+    (MRIO) matrices into semantically structured fourth-order tensors
+    (origin region, origin sector, destination region, destination sector).
+    Implements exact multi-mode array transformations, mode-n contractions,
+    standard Leontief output solves, and embodied environmental intensity
+    accounting, alongside truncated Higher-Order SVD (HOSVD) decomposition.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Depends: R (>= 4.1.0)
+Suggests: testthat (>= 3.0.0)
+Config/testthat/edition: 3
+URL: https://github.com/MaEconStat/mrioTensor
+BugReports: https://github.com/MaEconStat/mrioTensor/issues

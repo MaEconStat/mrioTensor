@@ -1,0 +1,11 @@
+^\.github$
+^\.gitignore$
+^\.Rbuildignore$
+^README\.md$
+^README\.zh-CN\.md$
+^LICENSE\.md$
+^CONTRIBUTING\.md$
+^NEWS\.md$
+^CITATION\.cff$
+^docs$
+^scripts$

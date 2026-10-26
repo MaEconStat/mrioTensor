@@ -1,0 +1,11 @@
+# Public surface for the 0.1.0 GitHub preview.
+S3method(print,mrio_tensor)
+export(aggregate_mrio)
+export(as_mrio_matrix)
+export(as_mrio_tensor)
+export(embodied_transfer)
+export(example_mrio)
+export(leontief_output)
+export(mode_product)
+export(mrio_hosvd)
+export(path_order_contributions)
